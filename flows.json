@@ -1,0 +1,547 @@
+[
+    {
+        "id": "e9b1f0c2.e8a6a",
+        "type": "tab",
+        "label": "WEB",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "d4e5f6a7.456789",
+        "type": "MySQLdatabase",
+        "name": "MariaDB Docker",
+        "host": "mariadb",
+        "port": "3306",
+        "db": "my_ecommerce",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "a1b2c3d4.123456",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "POST /api/login",
+        "url": "/api/login",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 180,
+        "wires": [
+            [
+                "b2c3d4e5.234567"
+            ]
+        ]
+    },
+    {
+        "id": "b2c3d4e5.234567",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Chuẩn bị câu SQL",
+        "func": "// Lấy username và password từ frontend gửi lên\nconst username = msg.payload.username;\nconst password = msg.payload.password;\n\n// Chuẩn bị câu SQL. Dùng ? để chống SQL Injection\n// Đây là phần quan trọng nhất để kiểm tra login\nmsg.topic = \"SELECT user_id, username, full_name, is_admin FROM Users WHERE username = ? AND password = ?\";\n\n// Truyền tham số cho dấu ? theo đúng thứ tự\nmsg.payload = [username, password];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 370,
+        "y": 180,
+        "wires": [
+            [
+                "c3d4e5f6.345678"
+            ]
+        ]
+    },
+    {
+        "id": "d4e5f6a7.567890",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Kiểm tra kết quả",
+        "func": "// msg.payload bây giờ là kết quả từ CSDL trả về\n\n// Nếu tìm thấy (kết quả là 1 mảng có ít nhất 1 phần tử)\nif (Array.isArray(msg.payload) && msg.payload.length > 0) {\n    // Lấy thông tin user (là phần tử đầu tiên)\n    const user = msg.payload[0];\n    \n    // TẠM THỜI: Gửi thông báo thành công và thông tin user\n    // THỰC TẾ: Bạn cần tạo session/cookie ở đây\n    msg.payload = {\n        success: true,\n        message: \"Đăng nhập thành công!\",\n        user: user\n    };\n    msg.statusCode = 200;\n} else {\n    // Nếu không tìm thấy (mảng rỗng)\n    msg.payload = {\n        success: false,\n        message: \"Sai tên đăng nhập hoặc mật khẩu\"\n    };\n    msg.statusCode = 401; // Lỗi 401 - Unauthorized\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 420,
+        "y": 280,
+        "wires": [
+            [
+                "e5f6a7b8.678901",
+                "f6a7b8c9.789012"
+            ]
+        ]
+    },
+    {
+        "id": "e5f6a7b8.678901",
+        "type": "http response",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Trả về Frontend",
+        "statusCode": "",
+        "headers": {},
+        "x": 620,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "f6a7b8c9.789012",
+        "type": "debug",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Xem kết quả",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 610,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "c3d4e5f6.345678",
+        "type": "mysql",
+        "z": "e9b1f0c2.e8a6a",
+        "mydb": "d4e5f6a7.456789",
+        "name": "Database: my_ecommerce",
+        "x": 700,
+        "y": 180,
+        "wires": [
+            [
+                "d4e5f6a7.567890"
+            ]
+        ]
+    },
+    {
+        "id": "efb831e72593a430",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "POST /api/register",
+        "url": "/api/register",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 420,
+        "wires": [
+            [
+                "baab3a356c9016d0"
+            ]
+        ]
+    },
+    {
+        "id": "baab3a356c9016d0",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Chuẩn bị SQL INSERT",
+        "func": "// Lấy dữ liệu từ frontend (giả sử có username, password, email, full_name)\nconst u = msg.payload.username;\nconst p = msg.payload.password;\nconst e = msg.payload.email;\nconst f = msg.payload.full_name;\n\n// CẢNH BÁO: Mật khẩu nên được mã hóa (hash) trước khi lưu!\n\nmsg.topic = \"INSERT INTO Users (username, password, email, full_name, is_admin) VALUES (?, ?, ?, ?, 0)\";\nmsg.payload = [u, p, e, f];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 410,
+        "y": 420,
+        "wires": [
+            [
+                "93ad89ce7c6ee6a5"
+            ]
+        ]
+    },
+    {
+        "id": "93ad89ce7c6ee6a5",
+        "type": "mysql",
+        "z": "e9b1f0c2.e8a6a",
+        "mydb": "d4e5f6a7.456789",
+        "name": "Database: my_ecommerce",
+        "x": 640,
+        "y": 420,
+        "wires": [
+            [
+                "601d6f764b2185d9"
+            ]
+        ]
+    },
+    {
+        "id": "601d6f764b2185d9",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Kiểm tra kết quả",
+        "func": "// Kiểm tra xem có insert thành công không\nif (msg.payload && msg.payload.affectedRows === 1) {\n    msg.payload = { success: true, message: \"Đăng ký thành công!\" };\n    msg.statusCode = 201; // 201 - Created\n} else {\n    msg.payload = { success: false, message: \"Đăng ký thất bại\" };\n    msg.statusCode = 400; // 400 - Bad Request\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 450,
+        "y": 480,
+        "wires": [
+            [
+                "a5314aa98aaf9446"
+            ]
+        ]
+    },
+    {
+        "id": "a5314aa98aaf9446",
+        "type": "http response",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Trả về Frontend",
+        "statusCode": "",
+        "headers": {},
+        "x": 650,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "793acf4b5a25922a",
+        "type": "catch",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Bắt lỗi (VD: Trùng username)",
+        "scope": [
+            "93ad89ce7c6ee6a5"
+        ],
+        "uncaught": false,
+        "x": 340,
+        "y": 540,
+        "wires": [
+            [
+                "4054bef3377d4c93"
+            ]
+        ]
+    },
+    {
+        "id": "4054bef3377d4c93",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Thông báo lỗi",
+        "func": "msg.payload = { success: false, message: \"Tên đăng nhập hoặc email đã tồn tại\" };\nmsg.statusCode = 409; // 409 - Conflict\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 540,
+        "y": 540,
+        "wires": [
+            [
+                "a5314aa98aaf9446"
+            ]
+        ]
+    },
+    {
+        "id": "34eea74ee8134ebd",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "GET /api/products/bestsellers",
+        "url": "/api/products/bestsellers",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 220,
+        "y": 620,
+        "wires": [
+            [
+                "63864ee32d1ea6e3"
+            ]
+        ]
+    },
+    {
+        "id": "63864ee32d1ea6e3",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "SQL Bestsellers",
+        "func": "msg.topic = \"SELECT * FROM Products WHERE is_bestseller = 1\";\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 470,
+        "y": 620,
+        "wires": [
+            [
+                "4ee1d9bac87cbad0"
+            ]
+        ]
+    },
+    {
+        "id": "4ee1d9bac87cbad0",
+        "type": "mysql",
+        "z": "e9b1f0c2.e8a6a",
+        "mydb": "d4e5f6a7.456789",
+        "name": "Database: my_ecommerce",
+        "x": 710,
+        "y": 800,
+        "wires": [
+            [
+                "97bee202420ff29d"
+            ]
+        ]
+    },
+    {
+        "id": "97bee202420ff29d",
+        "type": "http response",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Trả về Frontend",
+        "statusCode": "",
+        "headers": {},
+        "x": 920,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "9b1143ca2c279563",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "GET /api/categories",
+        "url": "/api/categories",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 700,
+        "wires": [
+            [
+                "3750b99764395675"
+            ]
+        ]
+    },
+    {
+        "id": "3750b99764395675",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "SQL Categories",
+        "func": "msg.topic = \"SELECT * FROM Categories\";\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 470,
+        "y": 700,
+        "wires": [
+            [
+                "4ee1d9bac87cbad0"
+            ]
+        ]
+    },
+    {
+        "id": "78c8aa2caad727a6",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "GET /api/products/category/:id",
+        "url": "/api/products/category/:id",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 220,
+        "y": 780,
+        "wires": [
+            [
+                "daefd6f0c8b0a051"
+            ]
+        ]
+    },
+    {
+        "id": "daefd6f0c8b0a051",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "SQL By Category",
+        "func": "const categoryId = msg.req.params.id;\nmsg.topic = \"SELECT * FROM Products WHERE category_id = ?\";\nmsg.payload = [categoryId];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 480,
+        "y": 780,
+        "wires": [
+            [
+                "4ee1d9bac87cbad0"
+            ]
+        ]
+    },
+    {
+        "id": "f6eda452c05a738a",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "GET /api/products/search",
+        "url": "/api/products/search",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 200,
+        "y": 860,
+        "wires": [
+            [
+                "987c6b20c0cbdd79"
+            ]
+        ]
+    },
+    {
+        "id": "987c6b20c0cbdd79",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "SQL Search",
+        "func": "// Lấy query từ ?q=... (ví dụ: /api/products/search?q=laptop)\nconst query = msg.req.query.q;\nmsg.topic = \"SELECT * FROM Products WHERE name LIKE ?\";\nmsg.payload = [ '%' + query + '%' ];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 460,
+        "y": 860,
+        "wires": [
+            [
+                "4ee1d9bac87cbad0"
+            ]
+        ]
+    },
+    {
+        "id": "5411e99cab268633",
+        "type": "http in",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "POST /api/order",
+        "url": "/api/order",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 820,
+        "y": 320,
+        "wires": [
+            [
+                "4ddab2d09ae2c752"
+            ]
+        ]
+    },
+    {
+        "id": "4ddab2d09ae2c752",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "1. Chuẩn bị INSERT Orders",
+        "func": "// Lấy thông tin giao hàng và giỏ hàng từ payload\nconst info = msg.payload.shippingInfo;\nconst cart = msg.payload.cart;\n\n// Tính tổng tiền\nlet total = 0;\ncart.forEach(item => {\n    total += item.price_per_item * item.quantity;\n});\n\n// Lưu giỏ hàng để dùng cho node sau\nmsg.cart = cart;\n\n// Chuẩn bị SQL cho bảng Orders\nmsg.topic = \"INSERT INTO Orders (customer_name, customer_phone, shipping_address, total_amount, status) VALUES (?, ?, ?, ?, 'PENDING');\";\nmsg.payload = [info.customer_name, info.customer_phone, info.shipping_address, total];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1060,
+        "y": 320,
+        "wires": [
+            [
+                "1b95cb90a39162ba"
+            ]
+        ]
+    },
+    {
+        "id": "1b95cb90a39162ba",
+        "type": "mysql",
+        "z": "e9b1f0c2.e8a6a",
+        "mydb": "d4e5f6a7.456789",
+        "name": "2. DB: Tạo Đơn hàng",
+        "x": 1290,
+        "y": 320,
+        "wires": [
+            [
+                "574afb9cb2e69ffd"
+            ]
+        ]
+    },
+    {
+        "id": "574afb9cb2e69ffd",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "3. Chuẩn bị INSERT OrderItems",
+        "func": "// Lấy order_id vừa được tạo\nconst orderId = msg.payload.insertId;\nconst cart = msg.cart;\n\nif (!orderId) {\n    node.error(\"Không tạo được orderId\", msg);\n    return null;\n}\n\nlet topics = [];\nlet payloads = [];\n\n// Tạo 1 mảng các câu SQL và 1 mảng các params tương ứng\ncart.forEach(item => {\n    topics.push(\"INSERT INTO OrderItems (order_id, product_id, quantity, price_per_item) VALUES (?, ?, ?, ?);\");\n    payloads.push([ orderId, item.product_id, item.quantity, item.price_per_item ]);\n});\n\nmsg.topic = topics;\nmsg.payload = payloads;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1090,
+        "y": 400,
+        "wires": [
+            [
+                "fee339d364d2b726"
+            ]
+        ]
+    },
+    {
+        "id": "fee339d364d2b726",
+        "type": "mysql",
+        "z": "e9b1f0c2.e8a6a",
+        "mydb": "d4e5f6a7.456789",
+        "name": "4. DB: Thêm sản phẩm vào đơn",
+        "x": 1330,
+        "y": 400,
+        "wires": [
+            [
+                "82d07b307fb4d196"
+            ]
+        ]
+    },
+    {
+        "id": "82d07b307fb4d196",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "5. Thông báo thành công",
+        "func": "msg.payload = { success: true, message: \"Đặt hàng thành công!\" };\nmsg.statusCode = 201;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1110,
+        "y": 480,
+        "wires": [
+            [
+                "5978ef53e69af732"
+            ]
+        ]
+    },
+    {
+        "id": "5978ef53e69af732",
+        "type": "http response",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Trả về Frontend",
+        "statusCode": "",
+        "headers": {},
+        "x": 1310,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "eccf33fc0e094234",
+        "type": "catch",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Bắt lỗi (Rollback?)",
+        "scope": [
+            "1b95cb90a39162ba",
+            "fee339d364d2b726"
+        ],
+        "uncaught": false,
+        "x": 970,
+        "y": 560,
+        "wires": [
+            [
+                "6b7ec1981afba42c"
+            ]
+        ]
+    },
+    {
+        "id": "6b7ec1981afba42c",
+        "type": "function",
+        "z": "e9b1f0c2.e8a6a",
+        "name": "Thông báo lỗi 500",
+        "func": "node.error(msg.error);\nmsg.payload = { success: false, message: \"Lỗi máy chủ khi tạo đơn hàng\" };\nmsg.statusCode = 500;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1180,
+        "y": 560,
+        "wires": [
+            [
+                "5978ef53e69af732"
+            ]
+        ]
+    },
+    {
+        "id": "b026f927ce369012",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-mysql": "2.0.0"
+        }
+    }
+]
